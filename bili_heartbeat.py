@@ -3,16 +3,12 @@ import requests
 import os
 
 """
-传入cookie中的 SESSDATA 和 bili_jct 和 mid，
 注意在 cookie 的 180 天过期时间之前更新 cookie
 
-SESSDATA=********* && bili_jct=********* && mid=********* && python bili_heartbeat.py
+export cookie="*********" && python bili_heartbeat.py
 """
 
-# 传入 SESSDATA 和 bili_jct 和 mid
-SESSDATA = os.getenv('SESSDATA')
-bili_jct = os.getenv('bili_jct')
-mid = os.getenv('mid')
+cookie = os.environ.get('cookie')
 
 
 class Queue:
@@ -40,16 +36,23 @@ class Queue:
 
 class PlayBiliVideo(object):
 
-    def __init__(self, SESSDATA, bili_jct, mid):
-        self.SESSDATA = SESSDATA
-        self.bili_jct = bili_jct
-        self.mid = mid
+    def __init__(self, cookie):
+        self.cookie = self.parse_cookie(cookie)
         self.headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
             'origin': 'https://www.bilibili.com',
             'referer': 'https://www.bilibili.com',
-            'cookie': 'SESSDATA={}; bili_jct={}; DedeUserID={}; blackside_state=1; CURRENT_FNVAL=4048; CURRENT_BLACKGAP=1; CURRENT_QUALITY=0; innersign=1; nostalgia_conf=-1; b_ut=5; i-wanna-go-back=-1;'.format(SESSDATA, bili_jct, mid)
+            'cookie': cookie
         }
+
+    # 解析cookie
+    def parse_cookie(self, cookie):
+        cookie_list = cookie.split(';')
+        cookie_dict = {}
+        for i in cookie_list:
+            k, v = i.split('=')
+            cookie_dict[k.strip()] = v.strip()
+        return cookie_dict
 
     def prt_err_msg(self, res, expectation):
         if res['code'] != expectation:
@@ -108,7 +111,7 @@ class PlayBiliVideo(object):
         ts = int(time.time())
 
         data = {
-            'mid': self.mid,
+            'mid': self.cookie['DedeUserID'],
             'part': 1,
             'lv': 6,
             'ftime': ts,
@@ -118,7 +121,7 @@ class PlayBiliVideo(object):
             'refer_url': 'https://www.bilibili.com/',
             'spmid': '333.788.0.0',
             'from_spmid': '',
-            'csrf': self.bili_jct,
+            'csrf': self.cookie['bili_jct'],
         }
 
         # 数组合并
@@ -133,7 +136,7 @@ class PlayBiliVideo(object):
         """观看视频"""
 
         data = {
-            'mid': self.mid,
+            'mid': self.cookie['DedeUserID'],
             'played_time': param['time'],
             'real_played_time': param['time'],
             'realtime': param['time'],
@@ -147,7 +150,7 @@ class PlayBiliVideo(object):
             'refer_url': 'https://space.bilibili.com/164598376',
             'bsource': '',
             'playlist_type': 1,
-            'csrf': self.bili_jct,
+            'csrf': self.cookie['bili_jct'],
         }
 
         # 数组合并
@@ -226,4 +229,4 @@ class PlayBiliVideo(object):
 
 
 if __name__ == '__main__':
-    PlayBiliVideo(SESSDATA, bili_jct, mid).run()
+    PlayBiliVideo(cookie).run()
