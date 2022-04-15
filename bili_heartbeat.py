@@ -1,4 +1,3 @@
-from platform import machine
 import time
 import requests
 import os
@@ -21,8 +20,6 @@ class Queue:
         return self.items == []
 
     def enqueue(self, item):
-        # if item['task'] == 'h5':
-            # print(item)
         self.items.insert(0, item)
 
     def dequeue(self):
