@@ -1,3 +1,4 @@
+from platform import machine
 import time
 import requests
 import os
@@ -5,10 +6,11 @@ import os
 """
 注意在 cookie 的 180 天过期时间之前更新 cookie
 
-export cookie="*********" && python bili_heartbeat.py
+export cookie="*********" && export biz=1649999989 && python bili_heartbeat.py
 """
 
 cookie = os.environ.get('cookie')
+biz = os.environ.get('biz')
 
 
 class Queue:
@@ -19,6 +21,8 @@ class Queue:
         return self.items == []
 
     def enqueue(self, item):
+        # if item['task'] == 'h5':
+            # print(item)
         self.items.insert(0, item)
 
     def dequeue(self):
@@ -36,8 +40,9 @@ class Queue:
 
 class PlayBiliVideo(object):
 
-    def __init__(self, cookie):
+    def __init__(self, cookie, biz):
         self.cookie = self.parse_cookie(cookie)
+        self.biz = biz
         self.headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
             'origin': 'https://www.bilibili.com',
@@ -60,48 +65,40 @@ class PlayBiliVideo(object):
         else:
             print('SUCCESS')
 
-    def get_video_list(self):
-        videoList = [
-            {
-                'aid': 383108156,
-                'cid': 571184507,
-                'bvid': 'BV1iZ4y127pW',
-                'start_ts': 1649768312,
-                'duration': 87,
-            },
-            {
-                'aid': 425498094,
-                'cid': 569888447,
-                'bvid': 'BV1v3411J7AW',
-                'start_ts': 1649768525,
-                'duration': 208,
-            },
-            {
-                'aid': 637946697,
-                'cid': 567234798,
-                'bvid': 'BV1NY4y1i7fb',
-                'start_ts': 1649768734,
-                'duration': 85,
-            },
-            {
-                'aid': 382851517,
-                'cid': 564702726,
-                'bvid': 'BV1ZZ4y1m7Lj',
-                'start_ts': 1649768820,
-                'duration': 252,
-            }, {
-                'aid': 682688049,
-                'cid': 560110539,
-                'bvid': 'BV1bS4y1N7yn',
-                'start_ts': 1649769073,
-                'duration': 158,
-            }, {
-                'aid': 383070378,
-                'cid': 574094574,
-                'bvid': 'BV1vZ4y127xW',
-                'start_ts': 1649769379,
-                'duration': 148,
-            }]
+    def get_video_list(self, biz_id):
+        print('获取视频列表')
+        # 获取b站视频列表
+        url = 'https://api.bilibili.com/x/v2/medialist/resource/list'
+        data = {
+            'type': '1',
+            'oid': '',
+            'otype': '2',
+            'biz_id': biz_id,
+            'bvid': '',
+            'with_current': 'true',
+            'mobi_app': 'web',
+            'ps': '100',
+            'direction': 'false',
+            'sort_field': '1',
+            'tid': '0',
+            'desc': 'false'
+        }
+        res = requests.get(url, params=data, headers=self.headers).json()
+        media_list = res['data']['media_list']
+
+        videoList = []
+
+        # 循环media_list
+        for media in media_list:
+            videoList.append({
+                'aid': media['id'],
+                'cid': media['pages'][0]['id'],
+                'bvid': media['bv_id'],
+                'duration':  media['duration'],
+                'playlist_id': biz_id,
+            })
+            print(media['index'] + 1, media['title'])
+
         return videoList
 
     def h5(self, param):
@@ -143,7 +140,6 @@ class PlayBiliVideo(object):
             'type': 3,
             'dt': 2,
             'play_type': 0,
-            'playlist_id': 164598376,
             'from_spmid': '333.824.playlist_within_video.0',
             'spmid': '333.788.0.0',
             'auto_continued_play': 1,
@@ -162,24 +158,26 @@ class PlayBiliVideo(object):
         res = requests.post(heartbeat, data=data, headers=self.headers).json()
         self.prt_err_msg(res, 0)
 
-    def run(self):
+    def start(self, videoList):
         q = Queue()
 
+        start_ts = int(time.time())
+
+        print('添加队列')
         # 添加队列
-        videoList = self.get_video_list()
         for video in videoList:
             # 登录队列
             q.enqueue({
                 'param': {
-                    'video': video
+                    'video': video.copy()
                 },
                 'task': 'h5',
                 'sleep': 3,
             })
 
-            step = 15
-
+            video['start_ts'] = start_ts
             # 播放进度队列
+            step = 15
             start = video['duration'] // step
             for i in range(start + 1):
                 _sleep = step
@@ -209,14 +207,15 @@ class PlayBiliVideo(object):
                     'sleep': 3,
                 })
 
-        # print(q.items)
+            start_ts += video['duration'] + 3 + 3
 
+        print('开始队列')
         # 循环q.items
         while q.size() > 0:
             # 取出一个
             item = q.dequeue()
 
-            print(item['task'] + ':', item['param']['video']['bvid'])
+            print(item['task'] + ':', item['param'])
 
             # 执行
             self.__getattribute__(item['task'])(item['param'])
@@ -225,8 +224,12 @@ class PlayBiliVideo(object):
             time.sleep(item['sleep'])
 
         # 循环
-        self.run()
+        self.start()
+
+    def run(self):
+        videoList = self.get_video_list(self.biz)
+        self.start(videoList)
 
 
 if __name__ == '__main__':
-    PlayBiliVideo(cookie).run()
+    PlayBiliVideo(cookie, biz).run()
