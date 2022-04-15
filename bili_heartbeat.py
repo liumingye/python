@@ -4,8 +4,7 @@ import os
 
 """
 注意在 cookie 的 180 天过期时间之前更新 cookie
-
-export cookie="*********" && export biz=1649999989 && python bili_heartbeat.py
+export cookie="*********" && export biz=164598376 && python bili_heartbeat.py
 """
 
 cookie = os.environ.get('cookie')
@@ -81,6 +80,7 @@ class PlayBiliVideo(object):
             'desc': 'false'
         }
         res = requests.get(url, params=data, headers=self.headers).json()
+
         media_list = res['data']['media_list']
 
         videoList = []
@@ -221,7 +221,7 @@ class PlayBiliVideo(object):
             time.sleep(item['sleep'])
 
         # 循环
-        self.start()
+        self.start(videoList)
 
     def run(self):
         videoList = self.get_video_list(self.biz)
