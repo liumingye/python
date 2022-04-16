@@ -62,7 +62,7 @@ class PlayBiliVideo(object):
             print('SUCCESS')
 
     def get_video_list(self, biz_id):
-        print('获取视频列表')
+        print('获取视频列表:', biz_id)
         # 获取b站视频列表
         url = 'https://api.bilibili.com/x/v2/medialist/resource/list'
         data = {
@@ -166,27 +166,28 @@ class PlayBiliVideo(object):
             # 登录队列
             q.enqueue({
                 'param': {
-                    'video': video.copy()
+                    'video': video
                 },
                 'task': 'h5',
                 'sleep': 3,
             })
 
-            video['start_ts'] = start_ts
+            tempVideo = video.copy()
+            tempVideo['start_ts'] = start_ts
             # 播放进度队列
             step = 15
-            start = video['duration'] // step
+            start = tempVideo['duration'] // step
             for i in range(start + 1):
                 _sleep = step
                 _time = i * step
 
                 # 倒数第一个
-                if _time + step >= video['duration']:
-                    _sleep = video['duration'] - _time
+                if _time + step >= tempVideo['duration']:
+                    _sleep = tempVideo['duration'] - _time
 
                 q.enqueue({
                     'param': {
-                        'video': video,
+                        'video': tempVideo,
                         'time': _time,
                     },
                     'task': 'heartbeat',
@@ -194,17 +195,17 @@ class PlayBiliVideo(object):
                 })
 
             # 播放完成
-            if q.isEmpty() is False and q.front()['task'] == 'heartbeat' and q.front()['param']['time'] < video['duration']:
+            if q.isEmpty() is False and q.front()['task'] == 'heartbeat' and q.front()['param']['time'] < tempVideo['duration']:
                 q.enqueue({
                     'param': {
-                        'video': video,
-                        'time': video['duration'],
+                        'video': tempVideo,
+                        'time': tempVideo['duration'],
                     },
                     'task': 'heartbeat',
                     'sleep': 3,
                 })
 
-            start_ts += video['duration'] + 3 + 3
+            start_ts += tempVideo['duration'] + 3 + 3
 
         print('开始队列')
         # 循环q.items
