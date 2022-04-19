@@ -79,7 +79,7 @@ class PlayBiliVideo(object):
             'tid': '0',
             'desc': 'true'
         }
-        res = requests.get(url, params=data, headers=self.headers).json()
+        res = requests.get(url, params=data, headers=self.headers, verify=False).json()
 
         media_list = res['data']['media_list']
 
@@ -123,7 +123,7 @@ class PlayBiliVideo(object):
 
         h5 = 'https://api.bilibili.com/x/click-interface/click/web/h5'
 
-        res = requests.post(h5, data=data, headers=self.headers).json()
+        res = requests.post(h5, data=data, headers=self.headers, verify=False).json()
         self.prt_err_msg(res, 0)
 
     def heartbeat(self, param):
@@ -152,7 +152,7 @@ class PlayBiliVideo(object):
         # 观看视频的参数限制貌似较小
         heartbeat = 'https://api.bilibili.com/x/click-interface/web/heartbeat'
 
-        res = requests.post(heartbeat, data=data, headers=self.headers).json()
+        res = requests.post(heartbeat, data=data, headers=self.headers, verify=False).json()
         self.prt_err_msg(res, 0)
 
     def start(self, videoList):
