@@ -77,7 +77,7 @@ class PlayBiliVideo(object):
             'direction': 'false',
             'sort_field': '1',
             'tid': '0',
-            'desc': 'false'
+            'desc': 'true'
         }
         res = requests.get(url, params=data, headers=self.headers).json()
 
@@ -131,6 +131,7 @@ class PlayBiliVideo(object):
 
         data = {
             'mid': self.cookie['DedeUserID'],
+            'csrf': self.cookie['bili_jct'],
             'played_time': param['time'],
             'real_played_time': param['time'],
             'realtime': param['time'],
@@ -143,7 +144,6 @@ class PlayBiliVideo(object):
             'refer_url': 'https://space.bilibili.com/164598376',
             'bsource': '',
             'playlist_type': 1,
-            'csrf': self.cookie['bili_jct'],
         }
 
         # 数组合并
@@ -172,22 +172,22 @@ class PlayBiliVideo(object):
                 'sleep': 3,
             })
 
-            tempVideo = video.copy()
-            tempVideo['start_ts'] = start_ts
+            video1 = video.copy()
+            video1['start_ts'] = start_ts
             # 播放进度队列
             step = 15
-            start = tempVideo['duration'] // step
+            start = video1['duration'] // step
             for i in range(start + 1):
                 _sleep = step
                 _time = i * step
 
                 # 倒数第一个
-                if _time + step >= tempVideo['duration']:
-                    _sleep = tempVideo['duration'] - _time
+                if _time + step >= video1['duration']:
+                    _sleep = video1['duration'] - _time
 
                 q.enqueue({
                     'param': {
-                        'video': tempVideo,
+                        'video': video1,
                         'time': _time,
                     },
                     'task': 'heartbeat',
@@ -195,17 +195,19 @@ class PlayBiliVideo(object):
                 })
 
             # 播放完成
-            if q.isEmpty() is False and q.front()['task'] == 'heartbeat' and q.front()['param']['time'] < tempVideo['duration']:
-                q.enqueue({
-                    'param': {
-                        'video': tempVideo,
-                        'time': tempVideo['duration'],
-                    },
-                    'task': 'heartbeat',
-                    'sleep': 3,
-                })
+            video2 = video1.copy()
+            video2['played_time'] = -1
+            video2['play_type'] = 4
+            q.enqueue({
+                'param': {
+                    'video': video2,
+                    'time': video1['duration'],
+                },
+                'task': 'heartbeat',
+                'sleep': 3,
+            })
 
-            start_ts += tempVideo['duration'] + 3 + 3
+            start_ts += video1['duration'] + 3 + 3
 
         print('开始队列')
         # 循环q.items
