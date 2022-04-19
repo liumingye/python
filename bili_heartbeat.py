@@ -10,6 +10,7 @@ export cookie="*********" && export biz=164598376 && python bili_heartbeat.py
 cookie = os.environ.get('cookie')
 biz = os.environ.get('biz')
 
+requests.packages.urllib3.disable_warnings()
 
 class Queue:
     def __init__(self):
