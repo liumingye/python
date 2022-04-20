@@ -135,7 +135,7 @@ class PlayBiliVideo(object):
                 verify=False
             ).json()
         except:
-            print('ERROR:', res['message'])
+            print('ERROR')
 
         self.prt_err_msg(res, 0)
 
@@ -173,7 +173,7 @@ class PlayBiliVideo(object):
                 verify=False
             ).json()
         except:
-            print('ERROR:', res['message'])
+            print('ERROR')
 
         self.prt_err_msg(res, 0)
 
