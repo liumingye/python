@@ -59,10 +59,14 @@ class PlayBiliVideo(object):
         return cookie_dict
 
     def prt_err_msg(self, res, expectation):
-        if res['code'] != expectation:
-            print('ERROR:', res['message'])
-        else:
-            print('SUCCESS')
+        try:
+            if res['code'] != expectation:
+                print('ERROR:', res['message'])
+            else:
+                print('SUCCESS')
+        except:
+            print('ERROR')
+
 
     def get_video_list(self, biz_id):
         print('获取视频列表:', biz_id)
@@ -134,10 +138,10 @@ class PlayBiliVideo(object):
                 headers=self.headers,
                 verify=False
             ).json()
+            self.prt_err_msg(res, 0)
         except:
             print('ERROR')
 
-        self.prt_err_msg(res, 0)
 
     def heartbeat(self, param):
         """观看视频"""
@@ -172,10 +176,10 @@ class PlayBiliVideo(object):
                 headers=self.headers,
                 verify=False
             ).json()
+            self.prt_err_msg(res, 0)
         except:
             print('ERROR')
 
-        self.prt_err_msg(res, 0)
 
     def start(self, videoList):
         q = Queue()
